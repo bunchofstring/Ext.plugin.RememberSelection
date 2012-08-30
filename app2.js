@@ -1,7 +1,8 @@
 Ext.Loader.setPath('Ext.plugin', '.');
 Ext.application({
 	requires:[
-		'Ext.plugin.DropdownMenu'
+		'Ext.plugin.DropdownMenu',
+		'Ext.plugin.RememberSelection'
 	],
 	launch:function(){
 		Ext.define('Country',{
@@ -11,7 +12,14 @@ Ext.application({
 					{name:'cn',type:'string'},
 					{name:'name',type:'string'},
 					{name:'selected',type:'boolean',defaultValue:false}
-				]
+				],
+				identifier:{
+					type:'uuid'
+				},
+				proxy:{
+					id:'Country',
+					type:'localstorage'
+				}
 			},
 		});
 		Ext.define('Province',{
@@ -26,11 +34,22 @@ Ext.application({
 		Ext.create('Ext.data.Store',{
 			model:'Country',
 			storeId:'Country',
-			data:[
-				{cn:'us', name:'United States'},
-				{cn:'ca', name:'Canada'},
-				{cn:'mex', name:'Mexico'}
-			]
+			proxy:{
+				id:'Country',
+				type:'localstorage'
+			},
+			autoSync:true,
+			autoLoad:{
+				callback:function(records){
+					if(Ext.isEmpty(records)){
+						this.setData([
+							{cn:'us', name:'United States'},
+							{cn:'ca', name:'Canada'},
+							{cn:'mex', name:'Mexico'}
+						]);
+					}
+				}
+			}
 		});
 		Ext.create('Ext.data.Store',{
 			model:'Province',
@@ -126,7 +145,13 @@ Ext.application({
 							menuContainer.getStore().clearFilter();
 							menuContainer.getStore().filter('country_cn',record.get('cn'))
 						}
-					}
+					},
+					plugins:[{
+						xclass: 'Ext.plugin.RememberSelection',
+						getDefaultSelectionRecords:function(list){
+							return [list.getStore().findRecord('cn','us')];
+						}
+					}]
 				},
 				menuButton:{
 					iconCls:'arrow_down'
